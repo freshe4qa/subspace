@@ -33,11 +33,11 @@ sleep 1
 
 sudo apt update && sudo apt install ocl-icd-opencl-dev libopencl-clang-dev libgomp1 -y
 cd $HOME
-rm -rf subspace*
-wget -O subspace-node https://github.com/subspace/subspace/releases/download/gemini-2a-2022-sep-10/subspace-node-ubuntu-x86_64-gemini-2a-2022-sep-10
-wget -O subspace-farmer https://github.com/subspace/subspace/releases/download/gemini-2a-2022-sep-10/subspace-farmer-ubuntu-x86_64-gemini-2a-2022-sep-10
-chmod +x subspace*
-mv subspace* /usr/local/bin/
+wget -O pulsar https://github.com/subspace/pulsar/releases/download/v0.6.5-alpha/pulsar-ubuntu-x86_64-skylake-v0.6.5-alpha 
+sudo chmod +x pulsar
+sudo mv pulsar /usr/local/bin/
+sudo rm -rf $HOME/.config/pulsar
+/usr/local/bin/pulsar init
 
 systemctl stop subspaced subspaced-farmer &>/dev/null
 rm -rf ~/.local/share/subspace*
@@ -52,33 +52,15 @@ After=network.target
 [Service]
 User=$USER
 Type=simple
-ExecStart=/usr/local/bin/subspace-node --chain gemini-2a --execution wasm --state-pruning archive --validator --name $SUBSPACE_NODENAME
+ExecStart=/usr/local/bin/pulsar farm --verbose
 Restart=on-failure
-LimitNOFILE=65535
+LimitNOFILE=1048576
 
 [Install]
 WantedBy=multi-user.target" > $HOME/subspaced.service
 
-
-echo "[Unit]
-Description=Subspaced Farm
-After=network.target
-
-[Service]
-User=$USER
-Type=simple
-ExecStart=/usr/local/bin/subspace-farmer farm --reward-address $SUBSPACE_WALLET --plot-size 100G
-Restart=on-failure
-LimitNOFILE=65535
-
-[Install]
-WantedBy=multi-user.target" > $HOME/subspaced-farmer.service
-
-
-mv $HOME/subspaced* /etc/systemd/system/
+sudo mv $HOME/subspaced.service /etc/systemd/system/
 sudo systemctl restart systemd-journald
 sudo systemctl daemon-reload
-sudo systemctl enable subspaced subspaced-farmer
+sudo systemctl enable subspaced
 sudo systemctl restart subspaced
-sleep 10
-sudo systemctl restart subspaced-farmer
